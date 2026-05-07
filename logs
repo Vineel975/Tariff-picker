@@ -1,0 +1,3 @@
+[ClaimAI] STEP 1b GetTariffDocument: true Tariff loaded from zip. IsPSU=False InsurerCode=
+Index:14930 [ClaimAI] Tariff loaded. File: 6870-Brar Eye Hospital Pvt Ltd - Kotapura Faridkot Punjab  (01-Jun-2019) Only For Chola Ms Insurer.pdf
+Index:14974 [ClaimAI] SubmitAndLoadIframe. claimID: 26041586029 hasTariff: true
