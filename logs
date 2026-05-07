@@ -1,3 +1,6 @@
-[ClaimAI] STEP 1b GetTariffDocument: true Tariff loaded from zip. IsPSU=False InsurerCode=
-Index:14930 [ClaimAI] Tariff loaded. File: 6870-Brar Eye Hospital Pvt Ltd - Kotapura Faridkot Punjab  (01-Jun-2019) Only For Chola Ms Insurer.pdf
-Index:14974 [ClaimAI] SubmitAndLoadIframe. claimID: 26041586029 hasTariff: true
+15:30:51.139 [Tariff] STEP 1 — Outer zip scanned. InnerZips=0 DirectPDFs=3
+15:30:51.145 [Tariff] STEP 1 — InsurerCode= IsPSU=False ClaimID=26041586029
+15:30:51.155 [Tariff] STEP 2 — No inner zips. Direct PDF candidates (3): 6870-Brar Eye Hospital Kotkapura PB (02-July-2014).xls [2026-04-29] | 6870-Brar Eye Hospital Pvt Ltd - Kotapura Faridkot Punjab  (01-Jun-2019) Only For Chola Ms Insurer.pdf [2026-04-29] | 6870_Brar_Eye_Hospital_Pvt_Ltd_23_02_2018_31_12_2030_134202724978216781.pdf [2026-04-29]
+15:30:51.156 [Tariff] STEP 3 — Sending to AI for selection...
+15:30:51.171 [Tariff] FALLBACK — AI failed, using rule-based PickBestTariffFile
+15:30:51.758 [Tariff] STEP 4 — AI selected: 6870-Brar Eye Hospital Pvt Ltd - Kotapura Faridkot Punjab  (01-Jun-2019) Only For Chola Ms Insurer.pdf
