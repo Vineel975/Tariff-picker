@@ -7999,12 +7999,21 @@ namespace Enrollment.Controllers
 
             try
             {
-                string claimAiUrl = System.Configuration.ConfigurationManager.AppSettings["ClaimAIAuditURL"] ?? "";
+                string claimAiUrl = System.Configuration.ConfigurationManager.AppSettings["claimAIUrl"] ?? "";
+                // Strip any path — we only need the base (scheme + host + port)
                 if (!string.IsNullOrWhiteSpace(claimAiUrl))
                 {
-                    // Build base URL (remove /job path if present)
-                    var uri = new System.Uri(claimAiUrl.TrimEnd('/'));
-                    string baseUrl = uri.GetLeftPart(System.UriPartial.Authority);
+                    try
+                    {
+                        var u = new System.Uri(claimAiUrl.TrimEnd('/'));
+                        claimAiUrl = u.GetLeftPart(System.UriPartial.Authority);
+                    }
+                    catch { /* keep as-is if parsing fails */ }
+                }
+                TariffLog("[Tariff] AI CONFIG — ClaimAI base URL='" + claimAiUrl + "'");
+                if (!string.IsNullOrWhiteSpace(claimAiUrl))
+                {
+                    string baseUrl = claimAiUrl; // already stripped to base URL above
 
                     var fileNames = candidates.ConvertAll(c => c.Item1);
                     TariffLog("[Tariff] AI INPUT — Calling: " + baseUrl + "/api/tariff-file-selection");
