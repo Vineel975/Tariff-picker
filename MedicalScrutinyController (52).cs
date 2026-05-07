@@ -8007,6 +8007,7 @@ namespace Enrollment.Controllers
                     string baseUrl = uri.GetLeftPart(System.UriPartial.Authority);
 
                     var fileNames = candidates.ConvertAll(c => c.Item1);
+                    TariffLog("[Tariff] AI INPUT — Calling: " + baseUrl + "/api/tariff-file-selection");
                     TariffLog("[Tariff] AI INPUT — " + fileNames.Count + " files: " + string.Join(" | ", fileNames));
                     TariffLog("[Tariff] AI INPUT — InsurerCode=" + insurerCode + " IsPSU=" + isPsu);
 
@@ -8046,7 +8047,7 @@ namespace Enrollment.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("[PickTariffFileWithAI] AI call failed: " + ex.Message + " — falling back to rule-based");
+                TariffLog("[Tariff] AI CALL FAILED — " + ex.GetType().Name + ": " + ex.Message);
             }
 
             // Fallback: use existing rule-based logic
