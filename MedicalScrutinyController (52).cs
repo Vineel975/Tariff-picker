@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -7990,6 +7990,9 @@ namespace Enrollment.Controllers
                     string baseUrl = uri.GetLeftPart(System.UriPartial.Authority);
 
                     var fileNames = candidates.ConvertAll(c => c.Item1);
+                    System.Diagnostics.Debug.WriteLine("[Tariff] AI INPUT — " + fileNames.Count + " files: " + string.Join(" | ", fileNames));
+                    System.Diagnostics.Debug.WriteLine("[Tariff] AI INPUT — InsurerCode=" + insurerCode + " IsPSU=" + isPsu);
+
                     var payload = Newtonsoft.Json.JsonConvert.SerializeObject(new
                     {
                         fileNames   = fileNames,
@@ -8009,7 +8012,7 @@ namespace Enrollment.Controllers
                             dynamic result = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
                             string selectedFile = result?.selectedFile?.ToString();
 
-                            System.Diagnostics.Debug.WriteLine("[PickTariffFileWithAI] AI selected: " + selectedFile + " | reason: " + result?.reason);
+                            System.Diagnostics.Debug.WriteLine("[Tariff] AI OUTPUT — Selected: " + selectedFile + " | Tier: " + result?.priorityTier + " | Reason: " + result?.reason);
 
                             if (!string.IsNullOrWhiteSpace(selectedFile))
                             {
@@ -8030,6 +8033,7 @@ namespace Enrollment.Controllers
             }
 
             // Fallback: use existing rule-based logic
+            System.Diagnostics.Debug.WriteLine("[Tariff] FALLBACK — AI failed, using rule-based PickBestTariffFile");
             return PickBestTariffFile(candidates, isPsu, insurerCode);
         }
 
@@ -8455,12 +8459,18 @@ namespace Enrollment.Controllers
 
                     byte[] tariffBytes = null;
 
+                    System.Diagnostics.Debug.WriteLine("[Tariff] STEP 1 — Outer zip scanned. InnerZips=" + innerZipCandidates.Count + " DirectPDFs=" + pdfCandidates.Count);
+                    System.Diagnostics.Debug.WriteLine("[Tariff] STEP 1 — InsurerCode=" + insurerCode + " IsPSU=" + isPsu + " ClaimID=" + cId);
+
                     if (innerZipCandidates.Count > 0)
                     {
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2 — Inner zip names: " + string.Join(" | ", innerZipCandidates.ConvertAll(z => z.Item1)));
+
                         // Collect all PDF candidates from all inner zips
                         var allInnerPdfCandidates = new System.Collections.Generic.List<System.Tuple<string, DateTime, byte[]>>();
                         foreach (var zipCandidate in innerZipCandidates)
                         {
+                            System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2a — Opening inner zip: " + zipCandidate.Item1);
                             try
                             {
                                 using (var innerMs = new System.IO.MemoryStream(zipCandidate.Item3))
@@ -8478,27 +8488,43 @@ namespace Enrollment.Controllers
                                         {
                                             stream.CopyTo(ms2);
                                             allInnerPdfCandidates.Add(System.Tuple.Create(entry.Name, entry.LastWriteTime.DateTime, ms2.ToArray()));
+                                            System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2b — Extracted from inner zip: " + entry.Name + " | LastModified=" + entry.LastWriteTime.DateTime.ToString("yyyy-MM-dd"));
                                         }
                                     }
                                 }
                             }
-                            catch { /* skip unreadable inner zip */ }
+                            catch (Exception zEx)
+                            {
+                                System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2c — Failed to open inner zip " + zipCandidate.Item1 + ": " + zEx.Message);
+                            }
                         }
 
                         // Also include top-level PDF candidates
-                        allInnerPdfCandidates.AddRange(pdfCandidates);
+                        if (pdfCandidates.Count > 0)
+                        {
+                            System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2d — Also including top-level PDFs: " + string.Join(" | ", pdfCandidates.ConvertAll(p => p.Item1)));
+                            allInnerPdfCandidates.AddRange(pdfCandidates);
+                        }
+
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 3 — All candidate file names collected (" + allInnerPdfCandidates.Count + "): " + string.Join(" | ", allInnerPdfCandidates.ConvertAll(f => f.Item1 + " [" + f.Item2.ToString("yyyy-MM-dd") + "]")));
 
                         // Use AI to pick best file
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 4 — Sending to AI for selection...");
                         var aiPicked = PickTariffFileWithAI(allInnerPdfCandidates, isPsu, insurerCode);
                         tariffBytes = aiPicked?.Item2;
                         tarFileName = aiPicked?.Item1 ?? tarFileName;
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 5 — AI selected: " + (tarFileName ?? "null"));
                     }
                     else if (pdfCandidates.Count > 0)
                     {
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 2 — No inner zips. Direct PDF candidates (" + pdfCandidates.Count + "): " + string.Join(" | ", pdfCandidates.ConvertAll(f => f.Item1 + " [" + f.Item2.ToString("yyyy-MM-dd") + "]")));
+
                         // No inner zips — use AI to pick best PDF directly
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 3 — Sending to AI for selection...");
                         var aiPicked = PickTariffFileWithAI(pdfCandidates, isPsu, insurerCode);
                         tariffBytes = aiPicked?.Item2;
                         tarFileName = aiPicked?.Item1 ?? tarFileName;
+                        System.Diagnostics.Debug.WriteLine("[Tariff] STEP 4 — AI selected: " + (tarFileName ?? "null"));
                     }
 
                     if (tariffBytes == null)
